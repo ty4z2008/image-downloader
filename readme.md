@@ -6,6 +6,6 @@ Logic
 
 - parse the crawle url and download directory from command args
 - get the body of response 
-- use regex match image url with extension
+- use regex match image url with suffix
 - use go concurrency download the image to your directory
 - exit

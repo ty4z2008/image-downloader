@@ -1,4 +1,4 @@
-package logger
+package utils
 
 import (
 	"github.com/google/logger"
@@ -33,4 +33,11 @@ func Info(v ...interface{}) {
 
 func Infof(format string, v ...interface{}) {
 	logger.Infof(format, v...)
+}
+func Warning(v ...interface{}) {
+	logger.Warning(v...)
+}
+
+func Warningf(format string, v ...interface{}) {
+	logger.Warningf(format, v...)
 }
