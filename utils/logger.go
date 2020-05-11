@@ -6,9 +6,10 @@ import (
 	"log"
 )
 
-func Init(name string, verbose bool) {
+func Init(name string, verbose bool) error {
 	defer logger.Init(name, verbose, true, ioutil.Discard).Close()
 	logger.SetFlags(log.Ldate | log.Ltime | log.LUTC)
+	return nil
 }
 
 func Fatal(v ...interface{}) {

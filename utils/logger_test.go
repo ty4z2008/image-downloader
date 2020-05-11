@@ -5,7 +5,12 @@ import (
 )
 
 func TestInit(t *testing.T) {
-	t.Run("project name", false, func(t *testing.T) {
-		Info("ok")
-	})
+	err := Init("test1", false)
+	if err != nil {
+		t.Fatal("defaultLogger does not match logger returned by Init")
+	}
+}
+
+func TestInfo(t *testing.T) {
+	Info("test info ok")
 }
