@@ -2,7 +2,7 @@
 * @Author: Jeffery
 * @Date:   2020-04-21 18:29:00
 * @Last Modified by:   Jeffery
-* @Last Modified time: 2020-05-11 01:02:32
+* @Last Modified time: 2020-05-11 10:39:42
  */
 package main
 
@@ -15,9 +15,10 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"path/filepath"
 	"regexp"
 	"strings"
-	"time"
+	"sync"
 )
 
 var (
@@ -37,6 +38,8 @@ func main() {
 		utils.Errorf("your url %s is not support", uri)
 		return
 	}
+	//create directory
+	createDownloadDir(directory)
 	//crawler page
 	imgUrls := crawlerPageImage(uri)
 	if len(imgUrls) == 0 {
@@ -44,11 +47,13 @@ func main() {
 		return
 	}
 	utils.Infof("find %d images", len(imgUrls))
+	var wg sync.WaitGroup
 	for _, imgUrl := range imgUrls {
-		download(imgUrl)
-		os.Exit(1)
+		wg.Add(1)
+		go download(imgUrl, &wg)
 	}
-	time.Sleep(2 * time.Second)
+	wg.Wait()
+	utils.Info("download image task complete.")
 }
 
 //crawler page
@@ -96,12 +101,14 @@ func crawlerPageImage(rawurl string) []string {
 }
 
 //download image
-func download(imgUrl string) {
+func download(imgUrl string, wg *sync.WaitGroup) {
+	defer wg.Done()
 	fileName, err := getUrlFileName(imgUrl)
 	if err != nil {
 		return
 	}
-	file, err := os.Create(fileName)
+	path := filepath.Join(directory, fileName)
+	file, err := os.Create(path)
 	defer file.Close()
 	if err != nil {
 		utils.Warning(err)
@@ -155,6 +162,7 @@ func getUrlFileName(imgUrl string) (string, error) {
 func validateUrl(rawurl string) bool {
 	if rawurl == "" {
 		utils.Error("Your url is empty")
+		os.Exit(0)
 		return false
 	}
 
@@ -169,6 +177,14 @@ func validateUrl(rawurl string) bool {
 		return false
 	}
 	return true
+}
+
+//create save image directory
+func createDownloadDir(path string) string {
+	if _, err := os.Stat(path); os.IsNotExist(err) {
+		os.Mkdir(path, os.FileMode(0755))
+	}
+	return path
 }
 
 //parse flag
