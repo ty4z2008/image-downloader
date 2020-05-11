@@ -1,4 +1,4 @@
-A douban page photo downloader
+A page image downloader
 
 This project inspired from [https://github.com/kkdai/project52](https://github.com/kkdai/project52)
 
