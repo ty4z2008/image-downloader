@@ -1,7 +1,7 @@
 #!/bin/bash
 
 if [ $# -lt 1 ]; then
-	echo "go build script need entry directory"
+	echo "go build script need entry"
 	exit 1
 fi
 
