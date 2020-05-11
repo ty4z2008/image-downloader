@@ -9,7 +9,6 @@ import (
 func Init(name string, verbose bool) {
 	defer logger.Init(name, verbose, true, ioutil.Discard).Close()
 	logger.SetFlags(log.Ldate | log.Ltime | log.LUTC)
-
 }
 
 func Fatal(v ...interface{}) {
