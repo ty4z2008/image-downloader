@@ -2,7 +2,7 @@
 * @Author: Jeffery
 * @Date:   2020-04-21 18:29:00
 * @Last Modified by:   Jeffery
-* @Last Modified time: 2020-05-11 10:39:42
+* @Last Modified time: 2020-05-11 15:13:29
  */
 package main
 
@@ -30,7 +30,6 @@ var (
 
 func main() {
 	utils.Init("image-downloader", true)
-	utils.Info("start the world")
 	parseFlag()
 	//validate url
 	isvalid := validateUrl(uri)
@@ -204,7 +203,7 @@ func parseFlag() {
 // Print the tools usage
 func usage() {
 	fmt.Fprintf(os.Stderr, `download image tools for website version %s
-Usage: download [-h] [-uri https://github.com] 
+Usage: download [-h] [-uri https://github.com] [-d] images
 
 Options:
 `, version)
