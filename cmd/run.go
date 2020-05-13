@@ -2,7 +2,7 @@
 * @Author: Jeffery
 * @Date:   2020-04-21 18:29:00
 * @Last Modified by:   Jeffery
-* @Last Modified time: 2020-05-11 15:13:29
+* @Last Modified time: 2020-05-13 11:03:02
  */
 package main
 
@@ -13,6 +13,7 @@ import (
 	"io"
 	"io/ioutil"
 	"net/http"
+	"net/http/cookiejar"
 	"net/url"
 	"os"
 	"path/filepath"
@@ -22,9 +23,10 @@ import (
 )
 
 var (
-	version   string = "0.0.1"
+	version   string = "0.1.0"
 	uri       string
 	directory string
+	cookie    string
 	help      bool
 )
 
@@ -59,10 +61,10 @@ func main() {
 func crawlerPageImage(rawurl string) []string {
 	var urls []string
 	utils.Infof("start crawler %s page", rawurl)
-	resp, err := http.Get(rawurl)
+	resp, err := httpClient(rawurl)
 	if err != nil {
 		utils.Error(err)
-		return urls
+		return nil
 	}
 	defer resp.Body.Close()
 
@@ -75,9 +77,8 @@ func crawlerPageImage(rawurl string) []string {
 		}
 		bodyStr = string(bodyBytes)
 	}
-	reg := regexp.MustCompile(`<img.*src="((\/|(https?)).*?)".*\/?>`)
+	reg := regexp.MustCompile(`<img.*src="(([a-zA-Z0-9]|\/|(https?)).*?)".*\/?>`)
 	matchImgUrl := reg.FindAllStringSubmatch(bodyStr, -1)
-
 	u, _ := url.Parse(rawurl)
 	scheme := u.Scheme
 	host := u.Host
@@ -89,6 +90,8 @@ func crawlerPageImage(rawurl string) []string {
 			imgUrl = fmt.Sprintf("%s:%s", scheme, imgUrl)
 		} else if strings.HasPrefix(imgUrl, "/") {
 			imgUrl = fmt.Sprintf("%s://%s%s", scheme, host, imgUrl)
+		} else if !strings.HasPrefix(imgUrl, "http") {
+			imgUrl = fmt.Sprintf("%s://%s%s%s", scheme, host, "/", imgUrl)
 		}
 		urlsMap[imgUrl] = ""
 	}
@@ -113,12 +116,11 @@ func download(imgUrl string, wg *sync.WaitGroup) {
 		utils.Warning(err)
 		return
 	}
-	client := httpClient()
-	if client == nil {
-		utils.Warning("get http client fail")
+	resp, err := httpClient(imgUrl)
+	if err != nil {
+		utils.Error(err)
 		return
 	}
-	resp, err := client.Get(imgUrl)
 	defer resp.Body.Close()
 	if err != nil {
 		utils.Warning(err)
@@ -133,15 +135,36 @@ func download(imgUrl string, wg *sync.WaitGroup) {
 }
 
 //http client
-func httpClient() *http.Client {
+func httpClient(rawurl string) (res *http.Response, err error) {
+	jar, err := cookiejar.New(nil)
+	if err != nil {
+		utils.Fatal(err)
+		return nil, err
+	}
+
 	client := http.Client{
+		Jar: jar,
 		CheckRedirect: func(r *http.Request, via []*http.Request) error {
 			r.URL.Opaque = r.URL.Path
 			return nil
 		},
 	}
 
-	return &client
+	req, err := http.NewRequest("GET", rawurl, nil)
+	if err != nil {
+		utils.Error("Make a request fail")
+		return nil, err
+	}
+	req.Header.Set("User-Agent", "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_4) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/81.0.4044.138 Safari/537.36")
+	req.Header.Set("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9")
+	req.Header.Set("Cookie", cookie)
+	resp, err := client.Do(req)
+	if err != nil {
+		utils.Error("request fatal:")
+		utils.Error(err)
+		return nil, err
+	}
+	return resp, nil
 }
 
 //get file name by image url
@@ -166,11 +189,12 @@ func validateUrl(rawurl string) bool {
 	}
 
 	utils.Infof("dial %s", rawurl)
-	resp, err := http.Get(rawurl)
+	resp, err := httpClient(rawurl)
 	if err != nil {
 		utils.Error(err)
 		return false
 	}
+
 	if resp.StatusCode != 200 {
 		utils.Infof("%s response code is %d.", rawurl, resp.StatusCode)
 		return false
@@ -190,8 +214,9 @@ func createDownloadDir(path string) string {
 func parseFlag() {
 	defer flag.Parse()
 
-	flag.BoolVar(&help, "h", false, "show usage")
-	flag.StringVar(&directory, "d", "images", "save the directory of image")
+	flag.BoolVar(&help, "h", false, "Show usage")
+	flag.StringVar(&directory, "d", "images", "Save the directory of image")
+	flag.StringVar(&cookie, "cookie", "", "Send cookies from string")
 	flag.StringVar(&uri, "uri", "", "Your want download website url for image ")
 	flag.Usage = usage
 	if help {
