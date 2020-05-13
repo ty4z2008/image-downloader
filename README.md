@@ -12,4 +12,4 @@ Logic
 
 Usage
 
-`go run cmd/run.go -d images -uri https://github.com`
+`go run cmd/run.go -d images -uri https://github.com -cookie "cookie string"`
